@@ -31,6 +31,8 @@ ELF_FILE_APP 	?= $(ELF_DIR)/test
 # This is the serial used by openocd to identify the ftdi connected to the debug module in the design
 # The value can be obtained by inspecting the vivado hardware manager or simply launching lsusb -v
 USB_SERIAL 	?= 210308BA4E87
+OLIMEX_BUS	:= 15ba:002b
+HS2_BUS		:= 0403:6014
 
 
 COMMON_ARGS := -mode batch -nojournal -nolog
@@ -41,6 +43,13 @@ secd: program openocd gdb_2bin_run kill_openocd
 
 setup_env:
 	./setup_env.sh
+
+# This targets prints the available jtag devices, so that the user can select the right one. It is not possible to know "a priori" which one is the usb connected to the desired FPGA.
+serial:
+	@echo "Scanning Olimex devices..."
+	@lsusb -d $(OLIMEX_BUS) -v | grep iSerial | awk '{print $$3}'
+	@echo "Scanning HS2 devices..."
+	@lsusb -d $(HS2_BUS) -v | grep iSerial | awk '{print $$3}'
 
 program:
 	$(VIVADO) $(COMMON_ARGS) \
@@ -71,7 +80,9 @@ openocd:
 	@echo "Checking for running hw_server..."
 	@pkill hw_server 2>/dev/null || true
 	@sleep 1
-	$(OPENOCD) -f $(OPENOCD_SCRIPT) &
+	$(OPENOCD) \
+	-c "set serial $(USB_SERIAL)" \
+	-f $(OPENOCD_SCRIPT) &
 	@echo "Openocd launched"
 
 
