@@ -1,38 +1,36 @@
-# Copyright 2024 ETH Zurich and University of Bologna.
-# Licensed under the Apache License, Version 2.0, see LICENSE for details.
-# SPDX-License-Identifier: Apache-2.0
-#
-# Common OpenOCD script for Cheshire (2 targets)
-
 transport select jtag
-telnet port disabled
-tcl port disabled
+telnet_port disabled
+tcl_port disabled
 reset_config none
 
-set NUM_TARGETS 2
+set _CHIPNAME ibex
+jtag newtap $_CHIPNAME cpu -irlen ${irlen}
+
+set _TARGETNAME $_CHIPNAME.cpu
+target create $_TARGETNAME riscv -chain-position $_TARGETNAME -coreid 0
+
 set _CHIPNAME riscv
+jtag newtap $_CHIPNAME cpu -irlen ${irlen}
 
-# Create JTAG taps and targets
-for {set i 0} {$i < $NUM_TARGETS} {incr i} {
-    set TAPNAME $_CHIPNAME.cpu$i
-    set TARGETNAME $_CHIPNAME.cpu$i
+set _TARGETNAME $_CHIPNAME.cpu
+target create $_TARGETNAME riscv -chain-position $_TARGETNAME -coreid 0
 
-    jtag newtap $_CHIPNAME cpu$i -irlen 5
-    target create $TARGETNAME riscv \
-        -chain-position $TAPNAME
-}
-
-
-#$_CHIPNAME.cpu0 configure -work-area-phys 0x80000000 -work-area-size 1000 -work-area-backup 0
 #riscv set_mem_access sysbus
-#riscv expose_csrs 1984=cpuctrl,1985=secureseed
 
-#gdb report_data_abort enable
-#gdb report_register_access_error enable
+gdb_port 6666
+gdb_report_data_abort enable
+gdb_report_register_access_error enable
 
 riscv set_command_timeout_sec 120
+riscv set_command_timeout_sec 120
+
+
+# Exit when debugger detaches
+$_TARGETNAME configure -event gdb-detach {
+    echo "GDB detached; ending debugging session."
+    shutdown
+}
 
 init
 halt
 echo "Ready for Remote Connections."
-
