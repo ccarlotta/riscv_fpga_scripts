@@ -7,19 +7,21 @@ OPENOCD		?= openocd
 GDB 		?= riscv64-unknown-elf-gdb
 
 # SCRIPTS directories
-VIVADO_DIR 	?= scripts_vivado
+VIVADO_DIR 		?= scripts_vivado
 OPENOCD_DIR 	?= scripts_openocd
 
 # BINARIES directories
-ELF_DIR 	?= bit_under_test/elf_secd
+ELF_DIR 		= bit_under_test/elf_secd
 BITSTREAM_DIR 	?= bit_under_test/fix
-PROBES_DIR 	?= $(BITSTREAM_DIR)
+PROBES_DIR 		?= $(BITSTREAM_DIR)
 
 # SCRIPTS
 PROGRAM_TCL 	?= $(VIVADO_DIR)/jtag_program.tcl
 WRITE_CFG_TCL 	?= $(VIVADO_DIR)/write_cfgmem.tcl
 VIO_TCL     	?= $(VIVADO_DIR)/set_vio.tcl
-OPENOCD_SCRIPT 	?= $(OPENOCD_DIR)/openocd.hs2.tcl
+TARGET_EXAMINE  ?= $(VIVADO_DIR)/target_examine.tcl
+#OPENOCD_SCRIPT 	?= $(OPENOCD_DIR)/openocd.hs2.tcl #$(OPENOCD_DIR)/openocd.olimex.tcl
+OPENOCD_SCRIPT 	?= $(OPENOCD_DIR)/openocd.olimex.tcl
 
 # BINARIES
 # In the Security Island in scarv the elf boot is executed by the Ibex core to setup the registers of the pulp cluster. The elf app is executed by the pulp cluster.
@@ -34,8 +36,15 @@ USB_SERIAL 	?= 210308BA4E87
 OLIMEX_BUS	:= 15ba:002b
 HS2_BUS		:= 0403:6014
 
+# This is the port at which I can connect to talk to a device. By specifying different ports I can talk with different devices without interference
+PORT		:= 3121
 
-COMMON_ARGS := -mode batch -nojournal -nolog
+VIO_PROBE 	:= boot_mode
+VIO_COMMAND := jtag
+
+DEVICE 		:= xc7k325t_0
+
+COMMON_ARGS := -mode batch -nojournal -nolog -quiet
 
 all: setup_env program boot_jtag reset openocd gdb_run kill_openocd
 
@@ -51,38 +60,41 @@ serial:
 	@echo "Scanning HS2 devices..."
 	@lsusb -d $(HS2_BUS) -v | grep iSerial | awk '{print $$3}'
 
-program:
+# This targets prevents Vivado to take over all the available devices.
+hw_server_filtered:
+	hw_server -s tcp::$(PORT) -e "set jtag-port-filter $(USB_SERIAL)" &
+
+program: #hw_server_filtered
 	$(VIVADO) $(COMMON_ARGS) \
 		-source $(PROGRAM_TCL) \
-		-tclargs $(PROJECT_NAME).bit $(PROJECT_NAME).ltx $(USB_SERIAL)
+		-tclargs $(PROJECT_NAME).bit $(PROJECT_NAME).ltx $(USB_SERIAL) $(DEVICE) $(PORT)
+	@pkill hw_server
 
-boot_spi:
+set_vio: #hw_server_filtered
 	$(VIVADO) $(COMMON_ARGS) \
 		-source $(VIO_TCL) \
-		-tclargs $(PROJECT_NAME).ltx 2 $(USB_SERIAL) 0
+		-tclargs $(PROJECT_NAME).ltx $(VIO_COMMAND) $(USB_SERIAL) $(VIO_PROBE) $(DEVICE) $(PORT)
+	@pkill hw_server
 
-boot_jtag:
+reset:# hw_server_filtered
 	$(VIVADO) $(COMMON_ARGS) \
 		-source $(VIO_TCL) \
-		-tclargs $(PROJECT_NAME).ltx 0 $(USB_SERIAL) 0
+		-tclargs $(PROJECT_NAME).ltx $(VIO_COMMAND) $(USB_SERIAL) $(VIO_PROBE) $(DEVICE) $(PORT)
+	@pkill hw_server
 
-boot_jtag_opentitan:
+targets: 
 	$(VIVADO) $(COMMON_ARGS) \
-		-source $(VIO_TCL) \
-		-tclargs $(PROJECT_NAME).ltx 0 $(USB_SERIAL) 1
-
-reset:
-	$(VIVADO) $(COMMON_ARGS) \
-		-source $(VIO_TCL) \
-		-tclargs $(PROJECT_NAME).ltx 0 $(USB_SERIAL) 2
+		-source $(TARGET_EXAMINE)
 
 openocd:
 	@echo "Checking for running hw_server..."
-	@pkill hw_server 2>/dev/null || true
+#	@pkill hw_server 2>/dev/null || true
 	@sleep 1
+	@echo $(USB_SERIAL)
 	$(OPENOCD) \
 	-c "set serial $(USB_SERIAL)" \
-	-f $(OPENOCD_SCRIPT) &
+	-f $(OPENOCD_SCRIPT) \
+	-c "script hyper_init.tcl"
 	@echo "Openocd launched"
 
 
@@ -92,7 +104,7 @@ kill_openocd:
 
 gdb_run:
 	$(GDB)  $(ELF_FILE_APP) \
-		-ex "target remote localhost:3333" \
+		-ex "target remote localhost:6667 \
 		-ex "load" \
 		-ex "c"
 

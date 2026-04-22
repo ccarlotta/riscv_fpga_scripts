@@ -28,7 +28,7 @@ $_TARGETNAME.0 configure -work-area-phys 0x80000000 -work-area-size 1000 -work-a
 # Expose custom CSRs, cpuctrl and secureseed
 # See https://ibex-core.readthedocs.io/en/latest/03_reference/cs_registers.html
 riscv expose_csrs 1984=cpuctrl,1985=secureseed
-
+gdb port 6667
 # Be verbose about GDB errors
 gdb report_data_abort enable
 gdb report_register_access_error enable

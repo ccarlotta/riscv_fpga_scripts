@@ -17,12 +17,12 @@ target create $_TARGETNAME riscv -chain-position $_TARGETNAME -coreid 0
 
 #riscv set_mem_access sysbus
 
-gdb_port 6666
-gdb_report_data_abort enable
-gdb_report_register_access_error enable
+gdb port 6668
+gdb report_data_abort enable
+gdb report_register_access_error enable
 
-riscv set_command_timeout_sec 120
-riscv set_command_timeout_sec 120
+#riscv set_command_timeout_sec 120
+#riscv set_command_timeout_sec 120
 
 
 # Exit when debugger detaches
@@ -32,5 +32,5 @@ $_TARGETNAME configure -event gdb-detach {
 }
 
 init
-halt
+reset halt
 echo "Ready for Remote Connections."

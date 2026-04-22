@@ -4,7 +4,7 @@
 #
 # OpenOCD script for Cheshire through Digilent HS2 adapter.
 
-adapter speed 500
+adapter speed 100
 #transport select jtag
 reset_config trst_only
 adapter driver ftdi

@@ -1,8 +1,16 @@
 set Filename [lindex $argv 0]
 set ProbeFilename [lindex $argv 1]
 set serial [lindex $argv 2]
+set hwDeviceName [lindex $argv 3]
+set port [lindex $argv 4]
 
-set hwDeviceName xcvu9p_0
+#if {[string trim $board] eq "vcu118"} {
+#    set hwDeviceName xcvu9p_0
+#} elseif {[string trim $board] eq "genesys2"} {
+#    set hwDeviceName xc7k325t_0
+#}
+
+#set host localhost.localdomain:$port
 set host localhost:3121
 
 open_hw_manager
