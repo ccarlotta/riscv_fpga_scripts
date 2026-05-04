@@ -1,3 +1,9 @@
+# Copyright 2026 Fondazione Chips-IT.
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+#
+# The scripts prints the available targets on the server.
+
 set host localhost:3121
 
 open_hw_manager -quiet

@@ -1,3 +1,9 @@
+# Copyright 2026 Fondazione Chips-IT.
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+#
+# The scritps controls the output of the VIO core used to reset the design and change the boot mode.
+
 set ProbeFilename [lindex $argv 0]
 set command [lindex $argv 1]
 set serial [lindex $argv 2]
@@ -13,8 +19,13 @@ if { [string trim $command] eq "jtag"} {
    set output 1
 }
 
-#set host localhost.localdomain:$port
-set host localhost:3121
+if {$port eq "0" || $port eq ""} {
+    set host localhost:3121
+} else {
+    set host localhost.localdomain:$port
+}
+
+#set host localhost:3121
 
 open_hw_manager
 connect_hw_server -url $host
@@ -37,6 +48,11 @@ if { [string trim $probe] eq "reset"} {
 	commit_hw_vio [lindex [get_hw_probes -of_objects [get_hw_vios] -filter $filter] 0]
 	set_property OUTPUT_VALUE 0 [lindex [get_hw_probes -of_objects [get_hw_vios] -filter $filter] 0]
 	commit_hw_vio [lindex [get_hw_probes -of_objects [get_hw_vios] -filter $filter] 0]
+} elseif { [string trim $probe] eq "git_hash" } {
+	set vio [lindex [get_hw_vios] 0]
+	refresh_hw_vio $vio
+    set value [get_property INPUT_VALUE [lindex [get_hw_probes -of_objects [get_hw_vios] -filter $filter] 0]]
+    puts "****** GIT_HASH ******   0x$value"
 } else {
 	set_property OUTPUT_VALUE $output [lindex [get_hw_probes -of_objects [get_hw_vios] -filter $filter] 0]
 	commit_hw_vio [get_hw_probes [lindex [get_hw_probes -of_objects [get_hw_vios] -filter $filter] 0]]

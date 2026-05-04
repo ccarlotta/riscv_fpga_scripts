@@ -2,7 +2,7 @@
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 #
-# Common OpenOCD script for Cheshire.
+# This script can be used when the OCD is driven by the bscan primitive of the Xilinx FPGA
 
 transport select jtag
 telnet port disabled

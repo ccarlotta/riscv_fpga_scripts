@@ -2,10 +2,10 @@
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 #
-# OpenOCD script for Cheshire through Digilent HS2 adapter.
+# OpenOCD script through Digilent HS2 adapter.
 
 adapter speed 100
-#transport select jtag
+
 reset_config trst_only
 adapter driver ftdi
 adapter serial ${serial} 

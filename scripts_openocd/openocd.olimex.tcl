@@ -1,6 +1,11 @@
+# Copyright 2024 ETH Zurich and University of Bologna.
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+#
+# OpenOCD script through Olimex ARM-USB-OCD-H.
+
 adapter speed     100
 
-# Olimex ARM-USB-OCD-H
 adapter driver ftdi
 ftdi device_desc "Olimex OpenOCD JTAG ARM-USB-OCD-H"
 ftdi vid_pid 0x15ba 0x002b

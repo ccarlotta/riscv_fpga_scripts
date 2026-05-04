@@ -1,3 +1,8 @@
+# Copyright 2026 Fondazione Chips-IT.
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+
 # SOFTWARE used by the Makefile
 # Vivado is used to program the board via the buit-in jtag chain of the FPGA
 # Openocd is used to connect to the debug module inside the design; it also opens a port enabling debug-request from gdb
@@ -11,7 +16,7 @@ VIVADO_DIR 		?= scripts_vivado
 OPENOCD_DIR 	?= scripts_openocd
 
 # BINARIES directories
-ELF_DIR 		= bit_under_test/elf_secd
+ELF_DIR 		?= bit_under_test/elf_secd
 BITSTREAM_DIR 	?= bit_under_test/fix
 PROBES_DIR 		?= $(BITSTREAM_DIR)
 
@@ -20,15 +25,22 @@ PROGRAM_TCL 	?= $(VIVADO_DIR)/jtag_program.tcl
 WRITE_CFG_TCL 	?= $(VIVADO_DIR)/write_cfgmem.tcl
 VIO_TCL     	?= $(VIVADO_DIR)/set_vio.tcl
 TARGET_EXAMINE  ?= $(VIVADO_DIR)/target_examine.tcl
-#OPENOCD_SCRIPT 	?= $(OPENOCD_DIR)/openocd.hs2.tcl #$(OPENOCD_DIR)/openocd.olimex.tcl
-OPENOCD_SCRIPT 	?= $(OPENOCD_DIR)/openocd.olimex.tcl
+OPENOCD_SCRIPT 	?= $(OPENOCD_DIR)/openocd.hs2.tcl #$(OPENOCD_DIR)/openocd.olimex.tcl
+#OPENOCD_SCRIPT 	?= $(OPENOCD_DIR)/openocd.olimex.tcl
 
 # BINARIES
-# In the Security Island in scarv the elf boot is executed by the Ibex core to setup the registers of the pulp cluster. The elf app is executed by the pulp cluster.
 PROJECT_NAME	?= $(BITSTREAM_DIR)/carfield_top_xilinx
-ELF_FILE_BOOT 	?= $(ELF_DIR)/generic_test.elf
 ELF_FILE_APP 	?= $(ELF_DIR)/test
+# LINUX CONFIG 
+# PAYLOAD is composed of the opensbi firmware + a payload (the linux kernel in this configuration)
+# DTB_FILE is the device tree blob
+# DTB_ADDR is the address where the device tree blob is stored.
+PAYLOAD       	?= fw_payload.elf
+DTB_FILE      	?= linux.dtb
+DTB_ADDR      	?= 0x81800000
 
+# Is Hyperram used?
+HYPER ?= 0
 
 # This is the serial used by openocd to identify the ftdi connected to the debug module in the design
 # The value can be obtained by inspecting the vivado hardware manager or simply launching lsusb -v
@@ -36,19 +48,17 @@ USB_SERIAL 	?= 210308BA4E87
 OLIMEX_BUS	:= 15ba:002b
 HS2_BUS		:= 0403:6014
 
-# This is the port at which I can connect to talk to a device. By specifying different ports I can talk with different devices without interference
-PORT		:= 3121
+USE_HW_FILTER ?= 0
+PORT ?= 0
 
-VIO_PROBE 	:= boot_mode
-VIO_COMMAND := jtag
+GDB_PORT	?= 6667
 
-DEVICE 		:= xc7k325t_0
+VIO_PROBE 	?= boot_mode
+VIO_COMMAND ?= jtag
+
+DEVICE 		?= xc7k325t_0
 
 COMMON_ARGS := -mode batch -nojournal -nolog -quiet
-
-all: setup_env program boot_jtag reset openocd gdb_run kill_openocd
-
-secd: program openocd gdb_2bin_run kill_openocd
 
 setup_env:
 	./setup_env.sh
@@ -64,19 +74,27 @@ serial:
 hw_server_filtered:
 	hw_server -s tcp::$(PORT) -e "set jtag-port-filter $(USB_SERIAL)" &
 
-program: #hw_server_filtered
+program: $(if $(filter 1,$(USE_HW_FILTER)),hw_server_filtered)
+	@echo "====================== PROGRAMMING FPGA ===================="
+	@echo "  BITSTREAM    = $(PROJECT_NAME).bit"
+	@echo "  LTX          = $(PROJECT_NAME).ltx"
+	@echo "  USB_SERIAL   = $(USB_SERIAL)"
+	@echo "  DEVICE       = $(DEVICE)"
+	@echo "============================================================"
 	$(VIVADO) $(COMMON_ARGS) \
 		-source $(PROGRAM_TCL) \
 		-tclargs $(PROJECT_NAME).bit $(PROJECT_NAME).ltx $(USB_SERIAL) $(DEVICE) $(PORT)
 	@pkill hw_server
 
-set_vio: #hw_server_filtered
-	$(VIVADO) $(COMMON_ARGS) \
-		-source $(VIO_TCL) \
-		-tclargs $(PROJECT_NAME).ltx $(VIO_COMMAND) $(USB_SERIAL) $(VIO_PROBE) $(DEVICE) $(PORT)
-	@pkill hw_server
-
-reset:# hw_server_filtered
+set_vio: $(if $(filter 1,$(USE_HW_FILTER)),hw_server_filtered)
+	@echo "======================= SETTING VIO ========================"
+	@echo "  BITSTREAM    = $(PROJECT_NAME).bit"
+	@echo "  LTX          = $(PROJECT_NAME).ltx"
+	@echo "  USB_SERIAL   = $(USB_SERIAL)"
+	@echo "  DEVICE       = $(DEVICE)"
+	@echo "  VIO PROBE    = $(VIO_PROBE)"
+	$(if $(filter vio_boot_mode,$(VIO_PROBE)),@echo  "  MODE         = $(VIO_COMMAND)")
+	@echo "============================================================"
 	$(VIVADO) $(COMMON_ARGS) \
 		-source $(VIO_TCL) \
 		-tclargs $(PROJECT_NAME).ltx $(VIO_COMMAND) $(USB_SERIAL) $(VIO_PROBE) $(DEVICE) $(PORT)
@@ -85,38 +103,37 @@ reset:# hw_server_filtered
 targets: 
 	$(VIVADO) $(COMMON_ARGS) \
 		-source $(TARGET_EXAMINE)
+	@pkill hw_server
 
 openocd:
-	@echo "Checking for running hw_server..."
-#	@pkill hw_server 2>/dev/null || true
-	@sleep 1
-	@echo $(USB_SERIAL)
+	@echo "====================== LAUNCHING OPENOCD ===================="
+	@echo "USB_SERIAL     = $(USB_SERIAL)"
+	@echo "GDB_PORT       = $(GDB_PORT)"
+	@echo "SCRIPT         = $(OPENOCD_SCRIPT)"
+	@echo "HYPER          = $(HYPER)"
+	@echo "============================================================="
 	$(OPENOCD) \
 	-c "set serial $(USB_SERIAL)" \
+	-c "set gdb_port $(GDB_PORT)" \
 	-f $(OPENOCD_SCRIPT) \
-	-c "script hyper_init.tcl"
+	$(if $(filter 1,$(HYPER)),-c "script hyper_init.tcl",)
 	@echo "Openocd launched"
-
-
-kill_openocd:
-	@echo "Killing openocd..."
-	@pkill openocd 2>/dev/null || true
 
 gdb_run:
 	$(GDB)  $(ELF_FILE_APP) \
-		-ex "target remote localhost:6667 \
+		-ex "target remote localhost:$(GDB_PORT)" \
 		-ex "load" \
 		-ex "c"
 
-gdb_2bin_run:
-	$(GDB) $(ELF_FILE_APP) \
-		-ex "target remote localhost:3333" \
-		-ex "load" \
-		-ex "file $(ELF_FILE_BOOT)" \
-		-ex "load" \
-		-ex "c" \
-		-ex "exit"
-
 write_bin_mem:
 	$(VIVADO) $(COMMON_ARGS) \
-		-source $(WRITE_CFG_TCL)
+		-source $(WRITE_CFG_TCL) \
+		-tclargs $(USB_SERIAL) $(PORT) $(PAYLOAD)
+
+run-linux:
+	$(GDB) $(PAYLOAD) \
+	-ex "target extended-remote :$(GDB_PORT)" \
+	-ex "monitor load_image $(DTB_FILE) $(DTB_ADDR)" \
+	-ex "set \$$pc=_start" -ex "info registers pc" -ex "set \$$a1=0x81800000" -ex "info registers a1" \
+	-ex "load" \
+	-ex "continue"
