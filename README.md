@@ -41,11 +41,11 @@ These scripts act as top-level configuration entry points, and they:
 
 The `openocd.general.tcl` can be used for a configurable number of cores connected in a daisy chain. 
 
-To configure the chain, edit:
-```tcl
- set CoreNames {opentitan cheshire}
- ```
-Each entry in CoreNames identifies a target connected to the shared JTAG chain.
+To configure the chain, the variable CORES should be passed to the Makefile
+```bash
+ CORES="opentitan cheshire"
+```
+Each entry in CORES identifies a target connected to the shared JTAG chain. To be noted that the order is important.
 For every name in the list, a corresponding core-specific configuration script is automatically loaded.
   
 In the example above, the following scripts are sourced:
@@ -71,7 +71,7 @@ make set_vio USB_SERIAL=<serial> DEVICE=<device> PROJECT_NAME=<path> VIO_COMMAND
 ### Run OpenOCD
 
 ```bash
-make openocd USB_SERIAL=<serial>
+make openocd USB_SERIAL=<serial> CORES="cheshire opentitan"
 ```
 
 ---
@@ -122,6 +122,19 @@ make set_vio \
   PROJECT_NAME=/path/to/file/bit_name \
   VIO_PROBE=git_hash
 ```
+
+To simplify the usage of the vio core, some additional targets are integrated in the Makefile (in wrapper.mk). In particular:
+
+```bash
+make boot_jtag PROJECT_NAME=/path/to/file/bit_name
+
+make boot_spi PROJECT_NAME=/path/to/file/bit_name
+
+make reset PROJECT_NAME=/path/to/file/bit_name
+
+make hash PROJECT_NAME=/path/to/file/bit_name
+```
+These are just wrappers of the set_vio targets.
 
 ---
 

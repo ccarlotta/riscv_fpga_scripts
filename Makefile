@@ -53,10 +53,12 @@ PORT ?= 0
 
 GDB_PORT	?= 6667
 
+CORES ?= cheshire
+
 VIO_PROBE 	?= boot_mode
 VIO_COMMAND ?= jtag
 
-DEVICE 		?= xc7k325t_0
+DEVICE 		?= xcvu9p_0
 
 COMMON_ARGS := -mode batch -nojournal -nolog -quiet
 
@@ -113,6 +115,7 @@ openocd:
 	@echo "HYPER          = $(HYPER)"
 	@echo "============================================================="
 	$(OPENOCD) \
+	-c "set CoreNames {$(CORES)}" \
 	-c "set serial $(USB_SERIAL)" \
 	-c "set gdb_port $(GDB_PORT)" \
 	-f $(OPENOCD_SCRIPT) \
@@ -137,3 +140,5 @@ run-linux:
 	-ex "set \$$pc=_start" -ex "info registers pc" -ex "set \$$a1=0x81800000" -ex "info registers a1" \
 	-ex "load" \
 	-ex "continue"
+
+include wrapper.mk

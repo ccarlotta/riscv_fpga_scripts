@@ -40,6 +40,8 @@ refresh_hw_device [lindex [get_hw_devices $hwDevice] 0]
 
 set cmd [string trim $probe]
 set filter "NAME =~ *$cmd*"
+puts $filter
+puts "[string trim $probe]"
 
 if { [string trim $probe] eq "reset"} {
 	set_property OUTPUT_VALUE 1 [lindex [get_hw_probes -of_objects [get_hw_vios] -filter $filter] 0]
@@ -51,9 +53,14 @@ if { [string trim $probe] eq "reset"} {
 	refresh_hw_vio $vio
     set value [get_property INPUT_VALUE [lindex [get_hw_probes -of_objects [get_hw_vios] -filter $filter] 0]]
     puts "****** GIT_HASH ******   0x$value"
-} else {
+} elseif { [string trim $probe] eq "vio_boot_mode" } {
 	set_property OUTPUT_VALUE $output [lindex [get_hw_probes -of_objects [get_hw_vios] -filter $filter] 0]
 	commit_hw_vio [get_hw_probes [lindex [get_hw_probes -of_objects [get_hw_vios] -filter $filter] 0]]
+} else {
+	puts "****** NO PROBE FOUND ******"
+		foreach probes [get_hw_probes -of_objects [get_hw_vios]] {
+		puts "Probe		: $probes"
+	}
 }
 
 
