@@ -15,6 +15,5 @@ ftdi vid_pid 0x0403 0x6014
 ftdi channel 0
 
 set irlen 5
-set CoreNames {cheshire opentitan}
 
 source [file dirname [info script]]/openocd.general.tcl

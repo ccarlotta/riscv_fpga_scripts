@@ -10,8 +10,8 @@ tcl_port disabled
 reset_config none
 
 set CoreNames {opentitan cheshire}
-set i 0
 
+set i 0
 foreach core $CoreNames {
     set gdb_port_$core [expr {$gdb_port + $i}]
     source [file dirname [info script]]/openocd.$core.tcl
@@ -19,5 +19,6 @@ foreach core $CoreNames {
 }
 
 init
+#reset halt
 
 echo "Ready for Remote Connections."
