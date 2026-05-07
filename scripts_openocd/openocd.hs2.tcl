@@ -13,6 +13,8 @@ adapter serial ${serial}
 ftdi layout_init 0x00e8 0x60eb
 ftdi vid_pid 0x0403 0x6014
 ftdi channel 0
-set irlen 5
 
-source [file dirname [info script]]/openocd.common.tcl
+set irlen 5
+set CoreNames {cheshire opentitan}
+
+source [file dirname [info script]]/openocd.general.tcl

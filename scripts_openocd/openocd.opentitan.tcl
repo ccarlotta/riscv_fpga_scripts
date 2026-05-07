@@ -1,35 +1,26 @@
-if { [info exists CHIPNAME] } {
-   set  _CHIPNAME $CHIPNAME
-} else {
-   set  _CHIPNAME riscv
-}
+# Common OpenOCD script for Ibex.
 
-#if { [info exists CPUTAPID ] } {
-#   set _CPUTAPID $CPUTAPID
-#} else {
-   # Defined in `hw/top_earlgrey/rtl/jtag_id_pkg.sv`.
-   #set _CPUTAPID 0x10001cdf
-#}
+set _CHIPNAME ibex
 
 jtag newtap $_CHIPNAME tap -irlen 5 
-#-expected-id $_CPUTAPID
-set _TARGETNAME $_CHIPNAME.tap
-target create $_TARGETNAME.0 riscv -chain-position $_TARGETNAME -rtos hwthread
 
+set _TARGETNAME $_CHIPNAME.tap
+target create $_TARGETNAME.0 riscv -chain-position $_TARGETNAME -gdb-port ${gdb_port_opentitan}
+# -rtos hwthread
 # Configure work area in on-chip SRAM
 $_TARGETNAME.0 configure -work-area-phys 0x80000000 -work-area-size 1000 -work-area-backup 0
 
 # This chip implements system bus access, use it.
 # Accessing the memory through the system bus is faster than through
 # instruction feeding.
-#riscv set_mem_access progbuf sysbus
 #riscv set_mem_access sysbus
 
 # Expose custom CSRs, cpuctrl and secureseed
 # See https://ibex-core.readthedocs.io/en/latest/03_reference/cs_registers.html
 riscv expose_csrs 1984=cpuctrl,1985=secureseed
-gdb port 6667
+#gdb port 6667
 # Be verbose about GDB errors
+#gdb port ${gdb_port_opentitan}
 gdb report_data_abort enable
 gdb report_register_access_error enable
 

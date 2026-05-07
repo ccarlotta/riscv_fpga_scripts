@@ -4,9 +4,9 @@
 #
 # The scritps erase the flash memory of the FPGA and writes a new configuration.
 
-set serial [lindex $argv 1]
-set port [lindex $argv 2]
-set linux_file [lindex $argv 3]
+set serial [lindex $argv 0]
+set port [lindex $argv 1]
+set linux_file [lindex $argv 1]
 
 if {$port eq "0" || $port eq ""} {
     set host localhost:3121

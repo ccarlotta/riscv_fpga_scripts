@@ -25,8 +25,6 @@ if {$port eq "0" || $port eq ""} {
     set host localhost.localdomain:$port
 }
 
-#set host localhost:3121
-
 open_hw_manager
 connect_hw_server -url $host
 current_hw_target [get_hw_targets -filter "NAME =~ *$serial"]

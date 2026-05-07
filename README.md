@@ -11,11 +11,11 @@ Just some scripts to interact with RTL cores on FPGA.
 ├── README.md
 ├── scripts_openocd
 │   ├── openocd.bscan.tcl
-│   ├── openocd.common.tcl
+│   ├── openocd.cheshire.tcl
 │   ├── openocd.hs2.tcl
 │   ├── openocd.olimex.tcl
 │   ├── openocd.opentitan.tcl
-│   └── openocd.twodev.tcl
+│   └── openocd.general.tcl
 ├── scripts_vivado
 │   ├── jtag_program.tcl
 │   ├── set_vio.tcl
@@ -30,19 +30,29 @@ It contains all the scripts used by vivado to program, reset, change boot mode a
 ### `scripts_openocd/`
 It contains all the scripts used to lauch openocd.
 OpenOCD should be started with one of the following:
-
-- `scripts_openocd/openocd.hs2.tcl`
-- `scripts_openocd/openocd.olimex.tcl`
+- `openocd.hs2.tcl`
+- `openocd.olimex.tcl`
 
 These scripts act as top-level configuration entry points, and they:
 - Select the correct debug adapter configuration
-- Launch a design-specific openocd scripts such as: 
+- Launch a wrapper openocd scripts: 
 
-  - `scripts_openocd/openocd.common.tcl`
-  - `scripts_openocd/openocd.twodev.tcl`
-  - `scripts_openocd/openocd.opentitan.tcl`
+  - `openocd.general.tcl`
 
-The `scripts_openocd/openocd.twodev.tcl` script is used when the two cores inside SCAR-V (CVA6 and Ibex) are connected in a daisy chain. In this case, a single debugger will be used.
+The `openocd.general.tcl` can be used for a configurable number of cores connected in a daisy chain. 
+
+To configure the chain, edit:
+```tcl
+ set CoreNames {opentitan cheshire}
+ ```
+Each entry in CoreNames identifies a target connected to the shared JTAG chain.
+For every name in the list, a corresponding core-specific configuration script is automatically loaded.
+  
+In the example above, the following scripts are sourced:
+
+  - `openocd.cheshire.tcl`
+  - `openocd.opentitan.tcl`
+
 
 ## Common Commands
 
