@@ -6,7 +6,7 @@
 
 set serial [lindex $argv 0]
 set port [lindex $argv 1]
-set linux_file [lindex $argv 1]
+set linux_file [lindex $argv 2]
 
 if {$port eq "0" || $port eq ""} {
     set host localhost:3121
