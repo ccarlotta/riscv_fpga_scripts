@@ -26,7 +26,6 @@ WRITE_CFG_TCL 	?= $(VIVADO_DIR)/write_cfgmem.tcl
 VIO_TCL     	?= $(VIVADO_DIR)/set_vio.tcl
 TARGET_EXAMINE  ?= $(VIVADO_DIR)/target_examine.tcl
 OPENOCD_SCRIPT 	?= $(OPENOCD_DIR)/openocd.hs2.tcl #$(OPENOCD_DIR)/openocd.olimex.tcl
-#OPENOCD_SCRIPT 	?= $(OPENOCD_DIR)/openocd.olimex.tcl
 
 # BINARIES
 PROJECT_NAME	?= $(BITSTREAM_DIR)/carfield_top_xilinx
@@ -128,7 +127,7 @@ gdb_run:
 		-ex "load" \
 		-ex "c"
 
-write_bin_mem:
+write_bin_mem: $(if $(filter 1,$(USE_HW_FILTER)),hw_server_filtered)
 	$(VIVADO) $(COMMON_ARGS) \
 		-source $(WRITE_CFG_TCL) \
 		-tclargs $(USB_SERIAL) $(PORT) $(PAYLOAD)
